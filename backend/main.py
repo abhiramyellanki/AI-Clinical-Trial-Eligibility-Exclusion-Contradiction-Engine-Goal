@@ -5,6 +5,8 @@ from google import genai
 from dotenv import load_dotenv
 from pypdf import PdfReader  # New import for PDF processing
 from io import BytesIO        # New import to handle file streams
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 # Load environment variables from .env file
 load_dotenv()
@@ -22,6 +24,22 @@ except Exception as e:
 
 # --- 2. FASTAPI APP SETUP ---
 app = FastAPI(title="Clinical Trial Eligibility Engine MVP (PDF Ready)")
+
+# --- CORS Configuration ---
+# You MUST replace the placeholder with your *actual* Vercel URL
+origins = [
+    "https://YOUR-VERCEL-NAME.vercel.app", # <--- Your Vercel frontend URL
+    "http://localhost:3000",              # For local testing
+    "http://127.0.0.1:8000",              # For local testing
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,              # Lists the allowed domains
+    allow_credentials=True,             # Allows cookies/auth headers
+    allow_methods=["*"],                # Allows all methods (GET, POST, OPTIONS, etc.)
+    allow_headers=["*"],                # Allows all headers
+)
 
 @app.get("/")
 def read_root():
