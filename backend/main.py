@@ -27,11 +27,7 @@ app = FastAPI(title="Clinical Trial Eligibility Engine MVP (PDF Ready)")
 
 # --- CORS Configuration ---
 # You MUST replace the placeholder with your *actual* Vercel URL
-origins = [
-    "https://ai-clinical-trial-eligibility-exclusion-contradictio-m7i0j476y.vercel.app/", # <--- Your Vercel frontend URL
-    "http://localhost:3000",              # For local testing
-    "http://127.0.0.1:8000",              # For local testing
-]
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
