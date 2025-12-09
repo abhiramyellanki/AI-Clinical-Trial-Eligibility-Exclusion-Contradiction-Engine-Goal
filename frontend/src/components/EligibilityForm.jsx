@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Markdown from 'react-markdown'; 
 import { FaPaperclip, FaFile, FaSpinner, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
 
-const API_URL = 'https://ai-clinical-trial-eligibility-exclusion.onrender.com/';
+const API_URL = 'https://ai-clinical-trial-eligibility-exclusion.onrender.com';
 
 export default function EligibilityForm() {
     const [patientData, setPatientData] = useState('');
