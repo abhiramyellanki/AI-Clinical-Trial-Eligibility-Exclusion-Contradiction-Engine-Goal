@@ -1,0 +1,27 @@
+SECTION 3: ELIGIBILITY CRITERIA
+
+3.1 INCLUSION CRITERIA:
+1. Male or female patients aged 18 to 75 years old (inclusive).
+2. Diagnosed with Type 2 Diabetes Mellitus for at least 6 months.
+3. Glycosylated Hemoglobin (HbA1c) between 6.0% and 7.0% (inclusive).
+4. Signed informed consent obtained.
+
+3.2 EXCLUSION CRITERIA:
+1. History of any malignancy (cancer) in the past 5 years.
+2. Estimated Glomerular Filtration Rate (eGFR) or Creatinine Clearance (CrCl) less than 60 mL/min.
+3. Current use of insulin therapy.
+4. History of bariatric surgery.
+
+SECTION 4: DOSE AND SCHEDULE
+4.1. STUDY TREATMENT
+The study drug (Compound X) is an oral tablet administered once daily (QD) at a fixed dose of 5 mg. The treatment period is 12 weeks.
+4.2. TREATMENT PERIOD
+The treatment period consists of 12 consecutive weeks (84 days) of daily dosing with Compound X (5 mg) or matching placebo.
+4.3. VISIT SCHEDULE
+Patients will attend 6 scheduled visits during the treatment period:
+* **Screening Visit (Visit 1):** Day -28 to Day -1. Includes informed consent and eligibility confirmation.
+* **Baseline Visit (Visit 2):** Day 1. First dose administration.
+* **Follow-up Visit 1 (Visit 3):** Week 4 (Day 29). Safety assessment.
+* **Follow-up Visit 2 (Visit 4):** Week 8 (Day 57). Efficacy and safety assessment.
+* **End-of-Treatment Visit (Visit 5):** Week 12 (Day 85). Final efficacy and safety assessment.
+* **Follow-up Contact (Visit 6):** 30 days post-treatment. Safety follow-up via phone call.

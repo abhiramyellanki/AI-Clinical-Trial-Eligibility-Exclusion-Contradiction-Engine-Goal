@@ -1,0 +1,12 @@
+# Python environments
+venv/
+
+# Node environments
+node_modules/
+
+# IDE files
+.vscode/
+.idea/
+
+# Secret files (CRITICAL: Do NOT upload your API Key!)
+backend/.env

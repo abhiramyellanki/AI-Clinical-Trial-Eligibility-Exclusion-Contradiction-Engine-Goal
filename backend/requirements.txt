@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+python-multipart  # For handling file uploads
+google-genai      # Gemini API client
+pydantic          # For data validation (built-in with FastAPI)
+python-dotenv
+pypdf
