@@ -23,6 +23,10 @@ except Exception as e:
 # --- 2. FASTAPI APP SETUP ---
 app = FastAPI(title="Clinical Trial Eligibility Engine MVP (PDF Ready)")
 
+@app.get("/")
+def read_root():
+    """Simple health check endpoint."""
+    return {"status": "ok", "service": "AI Eligibility Engine API"}
 # CORS CONFIGURATION
 origins = [
     "http://localhost",
