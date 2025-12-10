@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 # Correct imports for the modern Google GenAI SDK
 from google import generativeai
-from google.generativeai.errors import APIError
+from google.generativeai import APIError
 
 # Library for reading PDF content
 try:
