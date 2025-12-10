@@ -1,148 +1,181 @@
 import os
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from google import genai  # Correct import for the 'google-genai' package # Corrected Import
-from dotenv import load_dotenv
-from pypdf import PdfReader
-from io import BytesIO
-# Removed duplicate FastAPI and CORSMiddleware imports
+import io
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, status
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleEDA
+from pydantic import BaseModel
 
-# Load environment variables from .env file
-load_dotenv()
+# Correct imports for the modern Google GenAI SDK
+from google import generativeai
+from google.generativeai.errors import APIError
 
-# --- 1. LLM CLIENT SETUP (CORRECTED) ---
-# Fetch the key from environment variables (Render uses this)
-GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
-
-if not GEMINI_KEY:
-    # This will prevent the app from starting if the key is missing on Render
-    raise RuntimeError("GEMINI_API_KEY environment variable not found. Please ensure it is set on Render.")
-
-# Configure the API key globally using genai.configure(). 
-# This is the correct method for the SDK version you are using.
+# Library for reading PDF content
 try:
-    genai.configure(api_key=GEMINI_KEY)
-except Exception as e:
-    # The app will exit here if the key is invalid or configuration fails
-    raise RuntimeError(f"Error configuring Gemini API: {e}")
+    from pypdf import PdfReader
+except ImportError:
+    # If pypdf fails, try the older library as a fallback (though pypdf is preferred)
+    from PyPDF2 import PdfReader 
 
-# The 'client' object is no longer needed; we use 'genai.models' directly.
-# --- END LLM CLIENT SETUP ---
+# --- CONFIGURATION ---
+# The model name for complex reasoning tasks
+GEMINI_MODEL = "gemini-2.5-pro" # Recommended for detailed analysis of clinical protocols
 
+# Initialize FastAPI app
+app = FastAPI(
+    title="AI Clinical Trial Eligibility Engine",
+    description="Analyzes patient data against a trial protocol using the Gemini API."
+)
 
-# --- 2. FASTAPI APP SETUP ---
-app = FastAPI(title="Clinical Trial Eligibility Engine MVP (PDF Ready)")
-
-# --- CORS Configuration ---
-# Combined and cleaned up CORS configuration.
-
-# You MUST replace the placeholder with your *actual* Vercel URLs
-origins = ["*"]
-
+# Configure CORS (Crucial for the React frontend to communicate with this backend)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],  # Be more restrictive in production (e.g., ["http://localhost:3000"])
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Initialize the Gemini Client
+try:
+    # The client automatically picks up the GEMINI_API_KEY environment variable.
+    # We explicitly check for it to provide a clearer error message.
+    if not os.getenv("GEMINI_API_KEY"):
+        raise EnvironmentError("GEMINI_API_KEY environment variable is not set.")
+        
+    client = generativeai.Client()
+    print("Gemini Client successfully initialized.")
 
-@app.get("/")
-def read_root():
-    """Simple health check endpoint."""
-    return {"status": "ok", "service": "AI Eligibility Engine API"}
+except (EnvironmentError, Exception) as e:
+    # This RuntimeError is what the user was getting, so we wrap the error correctly
+    # to stop the application startup if the API key is missing.
+    # In a production environment, FastAPI prefers this to occur during startup.
+    # For a simple Render setup, raising the exception on import will halt the server.
+    print(f"Error configuring Gemini API: {e}")
+    # Instead of an immediate raise, we can use a dependency or check it on the route, 
+    # but for simplicity, we'll keep the client initialized (or None) and check it later.
+    client = None
+    # We will raise an HTTP 503 error if the client is None in the endpoint.
 
-client = genai.Client()
-# --- CORE ENDPOINT ---
+
+# --- HELPER FUNCTION ---
+
+def extract_text_from_file(file: UploadFile) -> str:
+    """Extracts text content from an uploaded PDF or TXT file."""
+    if file.content_type == "text/plain" or file.filename.lower().endswith('.txt'):
+        # Read plain text file
+        return file.file.read().decode('utf-8')
+    
+    elif file.content_type == "application/pdf" or file.filename.lower().endswith('.pdf'):
+        # Read PDF file
+        try:
+            # Wrap the file stream in a BytesIO object for PdfReader
+            pdf_file = io.BytesIO(file.file.read())
+            reader = PdfReader(pdf_file)
+            
+            text_content = ""
+            for page in reader.pages:
+                text_content += page.extract_text() or ""
+                
+            if not text_content.strip():
+                raise ValueError("Could not extract any meaningful text from the PDF.")
+                
+            return text_content
+            
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Failed to read PDF file: {e}"
+            )
+            
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="Unsupported file type. Only PDF and TXT are allowed."
+        )
+
+
+# --- API ENDPOINT ---
+
 @app.post("/analyze_eligibility/")
 async def analyze_eligibility(
     patient_data: str = Form(...),
-    protocol_file: UploadFile = File(...),
+    protocol_file: UploadFile = File(...)
 ):
     """
-    Analyzes patient data against a trial protocol, supporting PDF file uploads.
+    Analyzes patient data against a clinical trial protocol to determine eligibility
+    and identify any potential exclusion criteria contradictions.
     """
-    
-    # 3. READ & EXTRACT PROTOCOL CONTENT (PDF Extraction Logic)
-    protocol_content = ""
-    try:
-        # Check if the file is a PDF (optional, but good practice)
-        if not protocol_file.filename.lower().endswith('.pdf'):
-            # Fallback for TXT files (if user uploads .txt instead of .pdf)
-            if protocol_file.filename.lower().endswith('.txt'):
-                protocol_content = (await protocol_file.read()).decode("utf-8")
-            else:
-                raise ValueError("Unsupported file type. Please upload a .pdf or .txt file.")
-        
-        else: # Handle .pdf file
-            # Read the file content into memory as bytes
-            pdf_bytes = await protocol_file.read()
-            
-            # Use PdfReader to open the byte stream
-            pdf_reader = PdfReader(BytesIO(pdf_bytes))
-            
-            # Loop through all pages and extract text
-            for page in pdf_reader.pages:
-                text = page.extract_text()
-                if text:
-                    protocol_content += text + "\n\n"
-        
-        if not protocol_content.strip():
-            raise ValueError("Could not extract any meaningful text from the file.")
-            
-    except ValueError as ve:
-        raise HTTPException(status_code=400, detail=str(ve))
-    except Exception as e:
-        # Handle general file or parsing errors
-        raise HTTPException(status_code=500, detail=f"Error processing file: {e}")
-    
-    # 4. THE PROMPT ENGINEERING (Contradiction Logic - unchanged)
-    prompt = f"""
-    You are a highly accurate **Clinical Trial Eligibility and Contradiction Engine**. Your task is to compare the provided Patient Profile against the Clinical Trial Protocol and generate a final eligibility decision, a reasoning breakdown, and specifically identify any "silent exclusion triggers."
-
-    **INSTRUCTIONS:**
-    1.  **Analyze** the **Patient Profile** against the **Trial Protocol**.
-    2.  Determine the **Final Decision**: 'Eligible' or 'Ineligible'.
-    3.  Generate a summary of **Inclusion Matches** and **Exclusion Rejections**.
-    4.  **CRITICALLY**: Look for subtle contradictions where a patient meets a broad inclusion criterion but violates a highly specific exclusion criterion. This is the **Hidden Contradiction** section.
-    5.  The entire output MUST be formatted strictly using **Markdown**.
-
-    ---
-    ## 🧬 Patient Profile
-    {patient_data}
-
-    ---
-    ## 📑 Trial Protocol Text
-    {protocol_content}
-
-    ---
-    ## 🔬 ANALYSIS REPORT
-    
-    **Final Decision:** [Eligible or Ineligible]
-    
-    ### 🟢 Inclusion Criteria Met
-    * [List the specific criteria the patient meets.]
-    
-    ### 🔴 Exclusion Criteria Violated
-    * [List the specific criteria the patient fails, or state "None".]
-    
-    ### 🚨 Hidden Contradiction (Silent Exclusion Trigger)
-    [Explain the core contradiction, focusing on the patient's data violating an exclusion even if it met an inclusion. Clearly state the reason for ineligibility.]
-    """
-
-    # 5. CALL GEMINI API (UPDATED SYNTAX)
-    try:
-        # We call genai.models directly because genai.configure() was used
-        response = client.generate_content( 
-            model="gemini-2.5-flash",
-            contents=prompt
+    if client is None:
+         raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI service not configured. Check if GEMINI_API_KEY is set correctly."
         )
         
-        # 6. RETURN THE MARKDOWN OUTPUT
-        return {"result_markdown": response.text}
+    try:
+        # 1. Extract text from the uploaded protocol file
+        protocol_text = extract_text_from_file(protocol_file)
         
-    except Exception as e:
+        # 2. Construct the detailed prompt for the LLM
+        system_instruction = (
+            "You are an expert clinical research associate. Your task is to compare a patient's "
+            "profile against the full eligibility (Inclusion/Exclusion) criteria of a clinical trial protocol. "
+            "Provide your findings in a clear, highly structured Markdown format."
+        )
+
+        prompt = f"""
+        # Clinical Trial Eligibility Analysis
+
+        ## Patient Profile:
+        {patient_data}
+
+        ---
+
+        ## Trial Protocol Eligibility Criteria:
+        {protocol_text}
+
+        ---
+
+        ## Analysis Instructions:
+        1. **Final Decision:** State clearly if the patient is **Eligible** or **Not Eligible**.
+        2. **Inclusion Criteria Check:** List all inclusion criteria and state whether the patient meets each one (Mets/Not Met).
+        3. **Exclusion Criteria Check:** List all exclusion criteria and state whether the patient violates each one (Violates/Does Not Violate).
+        4. **Summary Table:** Provide a concise table summarizing the final decision, highlighting any criteria that were **Not Met** (Inclusion) or **Violated** (Exclusion).
+        """
+
+        # 3. Call the Gemini API
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=generativeai.types.GenerateContentConfig(
+                system_instruction=system_instruction
+            )
+        )
+        
+        # 4. Return the result in the format expected by the React frontend
+        return JSONResponse(
+            content={"result_markdown": response.text},
+            status_code=status.HTTP_200_OK
+        )
+
+    except APIError as e:
+        # Handle specific Gemini API errors (e.g., invalid key, rate limiting)
         print(f"Gemini API Error: {e}")
-        # Return a 500 status if the LLM processing itself fails
-        raise HTTPException(status_code=500, detail="LLM processing failed. Check API key and quota.")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"AI processing failed due to an API error: {e}"
+        )
+    except HTTPException as e:
+        # Re-raise explicit HTTP exceptions (like file type or PDF read errors)
+        raise e
+    except Exception as e:
+        # Catch all other unexpected errors
+        print(f"An unexpected error occurred: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An unexpected server error occurred: {e}"
+        )
+
+# --- ROOT PATH FOR HEALTH CHECK ---
+@app.get("/")
+def read_root():
+    return {"status": "ok", "message": "Clinical Trial Eligibility Engine is running."}
