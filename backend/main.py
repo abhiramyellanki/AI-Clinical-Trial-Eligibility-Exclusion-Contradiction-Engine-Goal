@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-import google.generativeai as genai  # Corrected Import
+from google import genai  # Correct import for the 'google-genai' package # Corrected Import
 from dotenv import load_dotenv
 from pypdf import PdfReader
 from io import BytesIO
