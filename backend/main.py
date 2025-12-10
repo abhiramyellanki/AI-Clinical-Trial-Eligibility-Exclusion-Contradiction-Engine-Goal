@@ -2,7 +2,7 @@ import os
 import io
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, status
 from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleEDA
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # Correct imports for the modern Google GenAI SDK
