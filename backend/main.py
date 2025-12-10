@@ -134,7 +134,7 @@ async def analyze_eligibility(
     # 5. CALL GEMINI API (UPDATED SYNTAX)
     try:
         # We call genai.models directly because genai.configure() was used
-        response = genai.models.generate_content( 
+        response = genai.generate_content( 
             model="gemini-2.5-flash",
             contents=prompt
         )
