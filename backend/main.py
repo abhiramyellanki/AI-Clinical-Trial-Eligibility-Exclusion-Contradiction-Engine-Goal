@@ -53,7 +53,7 @@ def read_root():
     """Simple health check endpoint."""
     return {"status": "ok", "service": "AI Eligibility Engine API"}
 
-
+client = genai.Client()
 # --- CORE ENDPOINT ---
 @app.post("/analyze_eligibility/")
 async def analyze_eligibility(
@@ -134,7 +134,7 @@ async def analyze_eligibility(
     # 5. CALL GEMINI API (UPDATED SYNTAX)
     try:
         # We call genai.models directly because genai.configure() was used
-        response = genai.generate_content( 
+        response = client.generate_content( 
             model="gemini-2.5-flash",
             contents=prompt
         )
