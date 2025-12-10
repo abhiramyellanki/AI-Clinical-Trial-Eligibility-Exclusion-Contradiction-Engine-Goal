@@ -8,7 +8,8 @@ from pydantic import BaseModel
 # --- CORRECT IMPORTS FOR THE MODERN 'google-genai' SDK ---
 from google.genai import Client
 from google.genai.errors import APIError # Correct import path for errors
-from google import generativeai
+import google.genai.types as genai_types
+#from google import generativeai
 # Library for reading PDF content
 try:
     from pypdf import PdfReader
@@ -145,7 +146,7 @@ async def analyze_eligibility(
         response = client.models.generate_content(
             model=GEMINI_MODEL,
             contents=prompt,
-            config=generativeai.types.GenerateContentConfig( # Ensure 'generativeai.types' is available
+            config=genai_types.GenerateContentConfig( # Ensure 'generativeai.types' is available
                 system_instruction=system_instruction
             )
         )
