@@ -47,12 +47,7 @@ def read_root():
     """Simple health check endpoint."""
     return {"status": "ok", "service": "AI Eligibility Engine API"}
 # CORS CONFIGURATION
-origins = [
-    "https://ai-clinical-trial-eligibili-abhiram-yellankis-projects-e99051c8.vercel.app/"
-    "https://ai-clinical-trial-eligibility-exclu-theta.vercel.app/"
-    "http://localhost",
-    "http://localhost:3000",
-]
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
