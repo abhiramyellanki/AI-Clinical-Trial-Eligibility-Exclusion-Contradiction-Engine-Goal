@@ -70,7 +70,7 @@ export default function EligibilityForm() {
     return (
         <div className="p-8 bg-gray-50 min-h-screen">
             <h1 className="text-3xl font-extrabold text-indigo-800 mb-6 border-b-4 border-indigo-200 pb-3 flex items-center">
-                <FaCheckCircle className="mr-3 text-indigo-600"/> AI Clinical Trial Contradiction Engine MVP
+                <FaCheckCircle className="mr-3 text-indigo-600"/> AI Clinical Trial Eligibility + Exclusion Contradiction Engine Goal
             </h1>
 
             <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-6 mb-8 bg-white p-6 rounded-xl shadow-lg">
