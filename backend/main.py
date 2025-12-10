@@ -1,55 +1,48 @@
 import os
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-import google.generativeai as genai
+import google.generativeai as genai  # Corrected Import
 from dotenv import load_dotenv
-from pypdf import PdfReader  # New import for PDF processing
-from io import BytesIO        # New import to handle file streams
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from pypdf import PdfReader
+from io import BytesIO
+# Removed duplicate FastAPI and CORSMiddleware imports
 
 # Load environment variables from .env file
 load_dotenv()
 
-# --- 1. LLM CLIENT SETUP ---
+# --- 1. LLM CLIENT SETUP (CORRECTED) ---
+# Fetch the key from environment variables (Render uses this)
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
 
 if not GEMINI_KEY:
-    raise RuntimeError("GEMINI_API_KEY environment variable not found. Please check your .env file.")
+    # This will prevent the app from starting if the key is missing on Render
+    raise RuntimeError("GEMINI_API_KEY environment variable not found. Please ensure it is set on Render.")
 
+# Configure the API key globally using genai.configure(). 
+# This is the correct method for the SDK version you are using.
 try:
-    client = genai.Client(api_key=GEMINI_KEY)
+    genai.configure(api_key=GEMINI_KEY)
 except Exception as e:
-    raise RuntimeError(f"Error initializing Gemini Client: {e}")
+    # The app will exit here if the key is invalid or configuration fails
+    raise RuntimeError(f"Error configuring Gemini API: {e}")
+
+# The 'client' object is no longer needed; we use 'genai.models' directly.
+# --- END LLM CLIENT SETUP ---
+
 
 # --- 2. FASTAPI APP SETUP ---
 app = FastAPI(title="Clinical Trial Eligibility Engine MVP (PDF Ready)")
 
 # --- CORS Configuration ---
-# You MUST replace the placeholder with your *actual* Vercel URL
-origins = [
-    "https://ai-clinical-trial-eligibility-exclusion-contradictio-9wwd3izj0.vercel.app/"
-    "https://ai-clinical-trial-eligibility-exclusion-contradictio-m7i0j476y.vercel.app/", # <--- Your Vercel frontend URL
-    "http://localhost:3000",              # For local testing
-    "http://127.0.0.1:8000",              # For local testing
-]
+# Combined and cleaned up CORS configuration.
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,              # Lists the allowed domains
-    allow_credentials=True,             # Allows cookies/auth headers
-    allow_methods=["*"],                # Allows all methods (GET, POST, OPTIONS, etc.)
-    allow_headers=["*"],                # Allows all headers
-)
-
-@app.get("/")
-def read_root():
-    """Simple health check endpoint."""
-    return {"status": "ok", "service": "AI Eligibility Engine API"}
-# CORS CONFIGURATION
+# You MUST replace the placeholder with your *actual* Vercel URLs
 origins = [
-    "http://localhost",
-    "http://localhost:3000",
+    "https://ai-clinical-trial-eligibility-exclu-theta.vercel.app/",
+    "https://ai-clinical-trial-eligibility-exclusion-contradictio-9wwd3izj0.vercel.app/",
+    "https://ai-clinical-trial-eligibility-exclusion-contradictio-m7i0j476y.vercel.app/", # <-- Your Vercel frontend URL
+    "http://localhost:3000",             # For local frontend testing
+    "http://127.0.0.1:8000",             # For local API testing
 ]
 
 app.add_middleware(
@@ -59,6 +52,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/")
+def read_root():
+    """Simple health check endpoint."""
+    return {"status": "ok", "service": "AI Eligibility Engine API"}
+
 
 # --- CORE ENDPOINT ---
 @app.post("/analyze_eligibility/")
@@ -79,7 +79,7 @@ async def analyze_eligibility(
             if protocol_file.filename.lower().endswith('.txt'):
                 protocol_content = (await protocol_file.read()).decode("utf-8")
             else:
-                 raise ValueError("Unsupported file type. Please upload a .pdf or .txt file.")
+                raise ValueError("Unsupported file type. Please upload a .pdf or .txt file.")
         
         else: # Handle .pdf file
             # Read the file content into memory as bytes
@@ -95,8 +95,8 @@ async def analyze_eligibility(
                     protocol_content += text + "\n\n"
         
         if not protocol_content.strip():
-             raise ValueError("Could not extract any meaningful text from the file.")
-             
+            raise ValueError("Could not extract any meaningful text from the file.")
+            
     except ValueError as ve:
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
@@ -137,9 +137,10 @@ async def analyze_eligibility(
     [Explain the core contradiction, focusing on the patient's data violating an exclusion even if it met an inclusion. Clearly state the reason for ineligibility.]
     """
 
-    # 5. CALL GEMINI API
+    # 5. CALL GEMINI API (UPDATED SYNTAX)
     try:
-        response = client.models.generate_content(
+        # We call genai.models directly because genai.configure() was used
+        response = genai.models.generate_content( 
             model="gemini-2.5-flash",
             contents=prompt
         )
