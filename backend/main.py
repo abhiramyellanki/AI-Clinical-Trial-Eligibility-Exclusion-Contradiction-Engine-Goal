@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from google import genai
+import google.generativeai as genai
 from dotenv import load_dotenv
 from pypdf import PdfReader  # New import for PDF processing
 from io import BytesIO        # New import to handle file streams
@@ -28,10 +28,8 @@ app = FastAPI(title="Clinical Trial Eligibility Engine MVP (PDF Ready)")
 # --- CORS Configuration ---
 # You MUST replace the placeholder with your *actual* Vercel URL
 origins = [
-    "https://ai-clinical-trial-eligibility-exclu-theta.vercel.app/"
     "https://ai-clinical-trial-eligibility-exclusion-contradictio-9wwd3izj0.vercel.app/"
-    "https://ai-clinical-trial-eligibility-exclusion-contradictio-m7i0j476y.vercel.app/",
-    "https://ai-clinical-trial-eligibility-exclusion.onrender.com/"
+    "https://ai-clinical-trial-eligibility-exclusion-contradictio-m7i0j476y.vercel.app/", # <--- Your Vercel frontend URL
     "http://localhost:3000",              # For local testing
     "http://127.0.0.1:8000",              # For local testing
 ]
@@ -49,7 +47,10 @@ def read_root():
     """Simple health check endpoint."""
     return {"status": "ok", "service": "AI Eligibility Engine API"}
 # CORS CONFIGURATION
-origins = ["*"]
+origins = [
+    "http://localhost",
+    "http://localhost:3000",
+]
 
 app.add_middleware(
     CORSMiddleware,
