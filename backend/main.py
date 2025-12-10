@@ -48,6 +48,7 @@ def read_root():
     return {"status": "ok", "service": "AI Eligibility Engine API"}
 # CORS CONFIGURATION
 origins = [
+    "https://ai-clinical-trial-eligibili-abhiram-yellankis-projects-e99051c8.vercel.app/"
     "https://ai-clinical-trial-eligibility-exclu-theta.vercel.app/"
     "http://localhost",
     "http://localhost:3000",
