@@ -139,7 +139,11 @@ async def analyze_eligibility(
         1. **Final Decision:** State clearly if the patient is **Eligible** or **Not Eligible**.
         2. **Inclusion Criteria Check:** List all inclusion criteria and state whether the patient meets each one (Meets/Not Met).
         3. **Exclusion Criteria Check:** List all exclusion criteria and state whether the patient violates each one (Violates/Does Not Violate).
-        4. **Summary Table:** Provide a concise table summarizing the final decision, highlighting any criteria that were **Not Met** (Inclusion) or **Violated** (Exclusion).
+        4. **Summary Table:** Provide a concise table with **EXACTLY THREE COLUMNS**.
+            * **Column Headers:** Use `| Criteria Type | Criterion | Patient Status |`.
+            * **Alignment Row:** Use `| :--- | :--- | :--- |` (Use three hyphens for maximum reliability).
+            * **Overall Row:** The final row should be for "Overall" and must use all three columns. The middle cell (Criterion) must be left blank. Example: `| Overall | | Eligible |`.
+            * **Avoid trailing spaces or extra pipes.**
         """
 
         # 4. Call the Gemini API
