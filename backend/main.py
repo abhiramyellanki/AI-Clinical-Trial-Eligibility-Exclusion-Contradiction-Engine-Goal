@@ -18,7 +18,7 @@ except ImportError:
     from PyPDF2 import PdfReader 
 
 # --- CONFIGURATION ---
-GEMINI_MODEL = "gemini-2.5-pro" # Recommended for detailed analysis of clinical protocols
+GEMINI_MODEL = "gemini-2.5-flash" # Recommended for detailed analysis of clinical protocols
 
 # Initialize FastAPI app
 app = FastAPI(
